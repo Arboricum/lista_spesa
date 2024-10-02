@@ -357,7 +357,7 @@
   function saveList(listaSpesa) {
     let savedLists = JSON.parse(localStorage.getItem('shoppingLists')) || {};
     let listName = '';
-    if (listaSpesa.length > 0 && !currentListName) {
+    if (listaSpesa.length > 0) {
       listName = prompt("Inserisci il nome della lista per salvarla:");
       currentListName = listName;
     } else if (listaSpesa.length === 0) {

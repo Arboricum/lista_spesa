@@ -17,4 +17,7 @@
         left: 50%;
         transform: translateX(-50%);
     }
+    th {
+        font-size: medium;
+    }
 }
