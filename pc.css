@@ -1,0 +1,20 @@
+@media screen and (min-width: 800px) {
+    body, html {
+        margin: 0;
+        padding: 0px;
+        height: 100vh;
+        background-image: url(sfondo.jpg);
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+        overflow-x: hidden;
+    }
+    header, main {
+        width: 730px;
+        position: relative;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}

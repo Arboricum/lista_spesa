@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="it">
+<link>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lista della spesa</title>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 10px;
+        height: 100vh;
+        background-image: url(sfondo.jpg);
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-attachment: fixed;
+        overflow-x: hidden;
+      }
+      header {
+        text-align: center;
+      }
+      header, main {
+        background: linear-gradient(to right, rgba(225, 225, 225, 0.9), rgba(255, 255, 255, 0.9));
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        border: 3px solid grey;
+      }
+      main section {
+        margin-bottom: 30px;
+      }
+      .insert-item {
+        display: none;
+      }
+      label {
+        font-weight: 800;
+        font-size: larger;
+      }
+      .list-form input, .list-form textarea {
+        display: block;
+        margin: 5px 0 10px 0;
+      }
+      #prodName, #prodComment {
+        width: 100%;
+        box-sizing: border-box;
+      }
+      button {
+        border-radius: 10px;
+        box-shadow: 1px 1px 1px grey;
+        padding: 5px;
+        background: linear-gradient(to right, rgba(255, 255, 255, 0.9), rgba(225, 225, 225, 0.9));
+      }
+      button:hover {
+        cursor: pointer;
+        box-shadow: 0px 0px 0px;
+      }
+      .edit-menu {
+        background: linear-gradient(to right, rgba(255, 255, 255, 0.9), rgba(225, 225, 225, 0.9));
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border-radius: 10px;
+        border: 3px dashed grey;
+        padding: 10px 20px;
+      }
+      .edit-menu button {
+        min-width: 100%;
+        margin-bottom: 5px;
+        background: linear-gradient(to right, rgba(215, 215, 215, 0.9), rgba(255, 255, 255, 0.9));
+      }
+      .after-start-btn {
+        display: none;
+      }
+      .load-lists {
+        background: linear-gradient(to right, rgba(255, 255, 255, 0.9), rgba(225, 225, 225, 0.9));
+        border-radius: 10px;
+        border: 3px solid grey;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 40%;
+        max-width: 60%;
+        min-width: 40%;
+        z-index: 3;
+        padding: 10px;
+      }
+      .load-lists button {
+        background: linear-gradient(to right, rgba(215, 215, 215, 0.9), rgba(255, 255, 255, 0.9));
+      }
+      .items-list table {
+        border-collapse: separate;
+        border-spacing: 10px;
+      }
+      th {
+        text-align: left;
+        font-size: larger;
+      }
+      td, th {
+        padding-left: 5px;
+        padding-right: 10px;
+      }
+      .item-taken {
+        background-color: rgba(255, 192, 203, 0.6);
+      }
+    </style>
+    <link rel="stylesheet" href="pc.css"/>
+    <link rel="stylesheet" href="small_screen.css"/>
+</head>
+<body>
+  <header>
+      <h1>Lista della spesa</h1>
+  </header>
+  <main>
+    <div class="items-list"></div>
+    <section class="insert-item">
+      <h2>Aggiungi alla lista</h2>
+      <form onsubmit="submitForm(event)" class="list-form">
+        <label>Prodotto:&nbsp;
+          <input type="text" placeholder="Nome prodotto" id="prodName" required>
+        </label>
+        <label>Quantità&nbsp;
+          <input type="number" min="1" max="100" placeholder="1" id="prodQty" value="1">
+        </label>
+        <label>Dettagli&nbsp;
+          <textarea placeholder="Aggiungi dettagli" id="prodComment" rows="2"></textarea>
+        </label>
+        <button type="submit">Aggiungi</button>
+      </form>
+      <hr>
+    </section>
+    
+    <section class="items-list-container">
+      <p class="no-list-placeholder"></p>
+      <div class="edit-menu">
+        <button type="button" onclick="resetList()" class="after-start-btn">Resetta lista corrente</button>
+        <button type="button" id="saveBtn" class="after-start-btn">Salva lista corrente</button>
+        <button type="button" onclick="startNewList()">Nuova lista</button>
+        <button type="button" onclick="loadLists()">Carica/Modifica/Elimina liste salvate</button>
+        <button type="button" onclick="removeLS()">Rimuovi tutte le liste salvate</button>
+      </div>
+    </section>
+  </main>
+</body>
+
+<script>
+  const insertItemMenu = document.querySelector('.insert-item');
+  const prodName = document.querySelector('#prodName');
+  const prodQty = document.querySelector('#prodQty');
+  const prodComment = document.querySelector('#prodComment');
+  let listaSpesa = [];
+  let currentListName = '';
+
+  const editMenu = document.querySelector('.edit-menu');
+  const afterStartBtns = document.querySelectorAll('.after-start-btn');
+  const saveBtn = document.querySelector('#saveBtn');
+  const saveListCaller = () => {saveList(listaSpesa)};
+  saveBtn.addEventListener('click', saveListCaller);
+
+  const noList = document.querySelector('.no-list-placeholder');
+  const itemsList = document.querySelector('.items-list');
+
+  function submitForm(e) {
+    e.preventDefault();
+    const prodId = "prod-" + Date.now().toString();
+    listaSpesa.push({ name: prodName.value, qty: prodQty.value, comment: prodComment.value, id: prodId, taken: false });
+    noList.style.display = 'none';
+    renderList(currentListName);
+    resetForm();
+  }
+
+  function deleteProd(idToDelete) {
+    listaSpesa = listaSpesa.filter((prod) => prod.id !== idToDelete);  // Aggiorna correttamente l'array filtrando fuori il prodotto da eliminare
+    renderList(currentListName);
+  }
+
+  function markAsTaken(prodId) {
+    const prod = listaSpesa.find((p) => p.id === prodId);
+    const markerBtn = document.querySelector(`#marker-btn-${prodId}`);
+    if (!prod.taken) {
+      document.querySelector(`#${prodId}`).classList.add('item-taken');
+      markerBtn.innerHTML = "Manca";
+    } else {
+      document.querySelector(`#${prodId}`).classList.remove('item-taken');
+      markerBtn.innerHTML = "Preso";
+    }
+    prod.taken = !prod.taken;
+  }
+
+  function renderList(listName) {
+    if (listaSpesa.length > 0) {
+      noList.style.display = 'none';
+      itemsList.innerHTML = `
+        ${listName ? `<h2>Lista ${listName}</h2>` : '<h2>Lista nuova</h2>'}
+        <table>
+          <tr>
+            <th>Prodotto</th>
+            <th>Quantità</th>
+            <th>Commento</th>
+            <th></th>
+            <th></th>
+          </tr>
+          ${listaSpesa.map((prod) => {
+            return (
+              `
+              <tr id='${prod.id}' class='${prod.taken ? "item-taken" : ""}'>
+                <td>${prod.name}</td>
+                <td>${prod.qty}</td>
+                <td>${prod.comment}</td>
+              </tr>
+              <tr>
+                <td><button type='button' onclick='deleteProd("${prod.id}")'>Elimina</button></td>
+                <td>
+                  <button 
+                    type='button' 
+                    onclick='markAsTaken("${prod.id}")' 
+                    id='marker-btn-${prod.id}'>
+                    ${prod.taken ? "Manca" : "Preso"}
+                  </button>
+                </td>
+              </tr>
+              `
+            );
+          }).join('')}
+        </table>
+        <hr>`;
+    } else if (listaSpesa.length === 0 && listName) {
+      noList.style.display = 'none';
+      itemsList.innerHTML = `
+        <h2>Lista ${listName}</h2>
+        <table>
+          <tr>
+            <th>Prodotto</th>
+            <th>Quantità</th>
+            <th>Commento</th>
+            <th></th>
+            <th></th>
+          </tr>
+        </table>
+        <hr>`
+    } else if (listaSpesa.length === 0 && !listName) {
+      noList.style.display = 'none';
+      itemsList.innerHTML = `
+        <h2>Lista Nuova</h2>
+        <table>
+          <tr>
+            <th>Prodotto</th>
+            <th>Quantità</th>
+            <th>Commento</th>
+            <th></th>
+            <th></th>
+          </tr>
+        </table>
+        <hr>`
+    }
+  }
+
+  function resetForm() {
+    prodName.value = '';
+    prodQty.value = '1';
+    prodComment.value = '';
+  }
+
+  function resetList() {
+    if (confirm("Sei sicuro di voler resettare la lista corrente?")) {
+      listaSpesa = [];
+      console.log(currentListName, "currentListName")
+      renderList(currentListName);
+    }
+  }
+
+  async function loadLists() {
+    let datas = await localStorage.getItem('shoppingLists');
+    console.log(datas);
+
+    // Verifica se non esiste o è vuoto
+    if (!datas || Object.keys(JSON.parse(datas)).length === 0) {
+      alert('Non ci sono liste salvate');
+      return; // Esci dalla funzione se non ci sono liste salvate
+    }
+
+    const savedLists = JSON.parse(datas);  // Converti la stringa JSON in oggetto
+    const loadListsElement = document.createElement('div');
+    loadListsElement.setAttribute('class', 'load-lists');
+    
+    let savedListsMenu = Object.entries(savedLists).map(([key, value]) => {
+      return `
+        <p>${key}</p>
+        <button type='button' onclick='loadList("${key}", ${JSON.stringify(value)})'>Carica</button>
+        <button type='button' onclick='deleteSavedList("${key}")'>Elimina</button>
+        `;
+    }).join('');  // Combina le chiavi in un'unica stringa HTML
+    
+    loadListsElement.innerHTML = savedListsMenu;
+    loadListsElement.appendChild(Object.assign(document.createElement('button'), {
+      style: 'position: absolute; right: 5px; top: 5px; padding: 2px',
+      onclick: closeLoadList,
+      innerText: 'x'
+    }));
+    document.body.appendChild(loadListsElement);
+    // Salva `loadListsElement` per poterlo rimuovere in seguito
+    window.currentLoadListsElement = loadListsElement;
+  }
+
+  function closeLoadList() {
+    if (window.currentLoadListsElement) {
+          document.body.removeChild(window.currentLoadListsElement);
+          window.currentLoadListsElement = null;  // Ripristina il valore per evitare rimozioni successive
+    }
+  }
+
+  function loadList(listName, list) {
+      // Rimuovi il div salvato
+      if (window.currentLoadListsElement) {
+          document.body.removeChild(window.currentLoadListsElement);
+          window.currentLoadListsElement = null;  // Ripristina il valore per evitare rimozioni successive
+      }
+      listaSpesa = [...list];
+      currentListName = listName;
+      insertItemMenu.style.display = 'block';
+      afterStartBtns.forEach(btn => {
+            btn.style.display = 'block';  // Imposta lo stile su block per ogni bottone
+        });
+      renderList(listName);
+  }
+
+  function startNewList() {
+    if (listaSpesa.length > 0 && confirm("Iniziare una nuova lista?")) {
+      listaSpesa = [];
+      currentListName = '';
+      renderList();
+    } else if (listaSpesa.length === 0) {
+      insertItemMenu.style.display = 'block';
+      afterStartBtns.forEach(btn => {
+            btn.style.display = 'block';  // Imposta lo stile su block per ogni bottone
+        });
+      currentListName = '';
+      renderList();
+    }
+  }
+
+  function deleteSavedList(listName) {
+    let savedLists = JSON.parse(localStorage.getItem('shoppingLists')); // Recupera le liste salvate
+    if (confirm("Sei sicuro di voler cancellare la lista salvata corrente?")) {
+        delete savedLists[listName];  // Elimina la lista desiderata
+        localStorage.setItem('shoppingLists', JSON.stringify(savedLists));  // Aggiorna localStorage
+        alert("Lista eliminata con successo!");
+        
+        // Ricarica la lista per rimuovere visivamente l'elemento eliminato
+        if (window.currentLoadListsElement) {
+            document.body.removeChild(window.currentLoadListsElement);
+            loadLists();  // Ricarica la lista delle liste salvate
+        }
+    }
+}
+
+  function saveList(listaSpesa) {
+    let savedLists = JSON.parse(localStorage.getItem('shoppingLists')) || {};
+    let listName = '';
+    if (listaSpesa.length > 0 && !currentListName) {
+      listName = prompt("Inserisci il nome della lista per salvarla:");
+      currentListName = listName;
+    } else if (listaSpesa.length === 0) {
+      alert('Devi aggiungere dei prodotti per salvare una lista')
+    }
+    if (listName) {
+      savedLists[listName] = listaSpesa.map((prod) => {
+        return { ...prod, taken: false };
+      });
+      localStorage.setItem('shoppingLists', JSON.stringify(savedLists));
+      alert("Lista salvata con successo!");
+      renderList(listName);
+    } else {
+      alert("Nome della lista non valido. Operazione annullata.");
+    }
+  }
+
+  function removeLS() {
+    if (confirm("Sei sicuro di voler cancellare tutte le liste salvate?")) {
+    localStorage.removeItem('shoppingLists');
+    console.log('storage removed')
+    }
+  }
+
+  /*
+  shoppingLists = {
+    nome1 = [{}],
+    nome2 = [{}],
+    nome3 = [{}]
+  }
+  */
+</script>
+
+</html>
+
+
